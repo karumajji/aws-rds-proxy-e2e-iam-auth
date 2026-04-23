@@ -27,7 +27,16 @@ Client App                      RDS Proxy                     Aurora MySQL
   │ ◄──────── Results ────────────│◄──────── Pooled connection ──│
 ```
 
-**In the worst case (no caching), every connection triggers two IAM validation calls.** Proxy's value is amortizing those calls across many client requests via connection pooling.
+When a client sends an IAM auth token to RDS Proxy:                                                                                                       
+
+1. Proxy sends the token to ARPS in the same region
+2. ARPS verifies the signature, checks expiration, and evaluates the IAM policies attached to the caller's identity
+3. ARPS returns allow/deny
+4. Proxy caches the result (crypto offload cache) so it doesn't call ARPS again for the same token
+**Note**: ARPS stands for AWS Regional Policy Service — it's an internal AWS service that evaluates IAM policies and validates authentication tokens.
+
+**In the worst case (no caching), every connection triggers two IAM validation calls.** Proxy's value is amortizing those calls across many client requests via connection pooling.  
+
 
 ## Prerequisites
 
